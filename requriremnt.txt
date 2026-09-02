@@ -1,0 +1,31 @@
+# Prototype Roadmap
+
+## 1. Input Model
+
+The model can accept two types of input:
+
+1. **Structured input**
+2. **Unstructured input**
+
+The initial prototype focuses on structured transcripts and documents, including
+PDF, Word, and Excel files.
+
+## 2. Transcript Processing
+
+For each transcript, the agent will:
+
+- Generate a concise conversation summary.
+- Assess call productivity.
+- Track the tone and emotions of each participant.
+- Identify action items from the conversation.
+
+## 3. Action Planning
+
+- Represent each participant as a node in a graph data structure.
+- Associate identified action items with the relevant participants.
+- Use a max-heap to prioritize tasks.
+- Send prioritized tasks to participants by email.
+
+## 4. Prototype Status
+
+The prototype is complete.
