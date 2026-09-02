@@ -28,7 +28,7 @@ flowchart TD
 	D --> F
 	E --> F
 	F --> G[Participant graph]
-	G --> H[Task prioritization with max-heap]
+	G --> H[Task prioritization with max-heap (priority queue)]
 	H --> I[Email tasks to participants]
 ```
 
