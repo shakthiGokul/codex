@@ -3,7 +3,7 @@
 ## Overview
 
 Codex AI processes structured conversation transcripts and turns them into
-useful follow-up actions. The first prototype focuses on transcripts and
+useful follow-up actions. The first prototype focuses on transcripts and later will be focused remaining structured
 documents such as PDF, Word, and Excel files.
 
 ## Roadmap
