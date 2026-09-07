@@ -4,18 +4,19 @@ folderPath = Path(__file__).resolve().parent.parent
 
 class Node:
     def __init__(self , id = '' , value  =''):
-        self.id = ''
-        self.value = ''
+        self.id = id
+        self.value = value
 
 
 class Graph:
     def __init__(self ,id = '' , value = ''):
         self.nodes = Node(id)
-
+        self.startNode = Node('')
 class Transcript:
     def __init__(self):
         self.contents = []
         self.participants = {}
+       
 
     def readAndFormatTheContents(self):
         membersOfMeetings = set()
@@ -30,7 +31,10 @@ class Transcript:
                             words.append(char)
                         member = self.getMembers(char , idx , contents)
                         if member and member not in membersOfMeetings:
-                            self.participants[member] = Graph(member)
+                            graphNode = Graph(member)
+                            if not graphNode.startNode.id:
+                                graphNode.startNode = Node(member)
+                            self.participants[member] = graphNode
                             membersOfMeetings.add(member)     
                         if char == " ": 
                             if len(words):
