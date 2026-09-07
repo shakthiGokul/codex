@@ -116,6 +116,69 @@ empty) edge map on first sight, records the turn on the node, then increments
 the edge from `prevNode` to it. The first speaker adds no edge because
 `prevNode` is still `None`.
 
+#### Graph shape for the sample transcript
+
+Nodes are speakers, arrows point from a speaker to whoever spoke next, and the
+label on the arrow is how many times that hand-off happened.
+
+```mermaid
+flowchart LR
+	A["A — 3 turns"] -->|x2| B["B — 2 turns"]
+	B -->|x2| C["C — 2 turns"]
+	C -->|x1| D["D — 1 turn"]
+	C -->|x1| A
+	D -->|x1| A
+```
+
+The same graph in plain text:
+
+```
+   ┌───────────────── x1 ─────────────────────┐
+   │                                          │
+   │   ┌─────┐ ────────── x2 ──────> ┌─────┐  │
+   └──>│  A  │                       │  B  │  │
+       │  3  │                       │  2  │  │
+       └─────┘                       └─────┘  │
+          ▲                             │     │
+          │ x1                       x2 │     │
+          │                             ▼     │
+       ┌─────┐ <───────── x1 ─────── ┌─────┐  │
+       │  D  │                       │  C  │──┘
+       │  1  │                       │  2  │
+       └─────┘                       └─────┘
+
+   box = speaker label / turn count      arrow = "spoke immediately after"
+   xN  = edge weight (times that hand-off happened)
+```
+
+The edges are a walk over the turn order — 8 turns, so 7 hand-offs:
+
+```
+  A ──> B ──> C ──> D ──> A ──> B ──> C ──> A
+  2    74   133   187   261   302   348   429   ← char offsets in Node.turns
+```
+
+The first four hand-offs trace the outer cycle `A→B→C→D→A`; turns 5-7 repeat
+`A→B→C`, which is why those two edges carry weight 2; the last `C→A` is the
+chord across the middle. `A` is the hub — every path returns to it, matching a
+transcript where A opens, redirects, and closes the call.
+
+In memory that is:
+
+```python
+graph.nodes = {                                   graph.edges = {
+    "A": Node("A", turns=[2, 261, 429],               "A": {"B": 2},
+                   lines=[3, 262, 430]),              "B": {"C": 2},
+    "B": Node("B", turns=[74, 302], ...),             "C": {"D": 1, "A": 1},
+    "C": Node("C", turns=[133, 348], ...),            "D": {"A": 1},
+    "D": Node("D", turns=[187], ...),             }
+}                                                 # prevNode == "A"
+```
+
+Edges are directed, so `A -> B` (2) and `B -> A` (absent) are independent — `A`
+never follows `B` in this transcript. A speaker taking two turns in a row would
+produce a self-loop (`edges["X"]["X"]`); nobody does in this sample.
+
 ### `Node` — a participant
 
 | Attribute | Type | Description |
