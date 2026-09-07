@@ -3,39 +3,47 @@ from pathlib import Path
 folderPath = Path(__file__).resolve().parent.parent
 
 class Node:
-    def __init__(self , id = '' , value  =''):
-        self.id = id
+    def __init__(self , value = None , next  = None):
         self.value = value
+        self.next = next
 
 
-class Graph:
+class LinkedList:
     def __init__(self ,id = '' , value = ''):
-        self.nodes = Node(id)
-        self.startNode = Node('')
+        self.nodes = Node(None)
+
+    def addNode(self, node):
+        newNode = Node(node)
+        currentNode = self.nodes
+        if currentNode.next is None:
+            currentNode.next = newNode
+        else:
+            while currentNode and currentNode.next is None:
+                currentNode = currentNode.next
+            currentNode = newNode
+        return self        
+
+
 class Transcript:
     def __init__(self):
         self.contents = []
-        self.participants = {}
+        self.participants = set()
        
 
     def readAndFormatTheContents(self):
-        membersOfMeetings = set()
         for filePath in folderPath.rglob('*.txt'):
            isTranscriptPath = self.getTranscriptPath(filePath)
            if isTranscriptPath:
                with filePath.open('r' , encoding="utf-8") as file:
                    contents  = file.read()
                    words = []
+                   linkedList = LinkedList()
                    for idx, char in enumerate(contents):
                         if self.isValidChar(char):
                             words.append(char)
                         member = self.getMembers(char , idx , contents)
-                        if member and member not in membersOfMeetings:
-                            graphNode = Graph(member)
-                            if not graphNode.startNode.id:
-                                graphNode.startNode = Node(member)
-                            self.participants[member] = graphNode
-                            membersOfMeetings.add(member)     
+                        if member not in self.participants:    
+                            linkedList.addNode(member)
                         if char == " ": 
                             if len(words):
                                 charBuffers = self.getCharChunks(words)

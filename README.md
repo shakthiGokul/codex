@@ -32,18 +32,44 @@ flowchart TD
 	H --> I[Email tasks to participants]
 ```
 
+## Layout
+
+| Path | Purpose |
+| --- | --- |
+| `app/main.py` | Transcript reader and word-chunk parser |
+| `transcript.txt` | Sample transcript, read from the project root |
+| `requrirement.txt` | Prototype requirements |
+
+## Running It
+
+```bash
+python3 app/main.py
+```
+
+`app/main.py` builds a `Transcript` at import time and calls
+`readAndFormatTheContents()`, so importing the module is enough to parse
+`transcript.txt`:
+
+```python
+import sys
+sys.path.insert(0, "app")
+import main
+
+main.transcript.contents  # parsed word chunks
+```
+
 ## Output Structure
 
-`readAndFormatTheContents()` walks the project folder, picks up the top-level
-`transcript.txt`, and returns the populated `Transcript` object. The parsed
-result lives in two attributes:
+`readAndFormatTheContents()` walks the project folder with `rglob('*.txt')`,
+keeps only the top-level `transcript.txt` (`getTranscriptPath()`), and returns
+the populated `Transcript` object. The parsed result lives in `contents`.
 
 ### `Transcript.contents` — `list[str]`
 
-The transcript flattened into whitespace-delimited word chunks. Only ASCII
-letters (`A-Z`, `a-z`) are kept, so digits and punctuation are dropped
-(`Q3` becomes `Q`, `80%` is dropped entirely), and speaker labels appear
-inline as their own entries.
+The transcript flattened into space-delimited word chunks. Only ASCII letters
+(`A-Z`, `a-z`) are kept, so digits and punctuation are dropped (`Q3` becomes
+`Q`, `80%` is dropped entirely), and speaker labels appear inline as their own
+entries.
 
 ```python
 [
@@ -53,32 +79,56 @@ inline as their own entries.
 ]
 ```
 
-### `Transcript.participants` — `dict[str, Graph]`
+For the sample `transcript.txt` this yields 87 chunks.
 
-One entry per speaker, keyed by the label that precedes the `:` at the start
-of a line. Each value is a `Graph` whose `nodes` and `startNode` are `Node`
-instances seeded with that participant's id.
+### `Transcript.participants` — `set`
 
-```python
-{
-    "A": Graph(nodes=Node(id="A", value=""), startNode=Node(id="A", value="")),
-    "B": Graph(nodes=Node(id="B", value=""), startNode=Node(id="B", value="")),
-    "C": Graph(nodes=Node(id="C", value=""), startNode=Node(id="C", value="")),
-    "D": Graph(nodes=Node(id="D", value=""), startNode=Node(id="D", value="")),
-}
-```
+Declared in `__init__` and used as the seen-speaker check inside the read loop,
+but nothing is ever added to it, so it stays empty after parsing.
+
+### Speaker detection — `getMembers()`
+
+Called for every character. When the character is a newline (or the index is
+`0`), it reads forward to the next `:` and returns the text before it as the
+speaker label; otherwise it returns `""`. So `getMembers('\n', 5, 'A: hi\nB: yo')`
+returns `"B"`.
+
+### `LinkedList` / `Node`
+
+A singly linked list built locally inside the read loop to collect speaker
+labels. `Node` holds `value` and `next`; `LinkedList` starts from a sentinel
+`Node(None)` and `addNode()` appends to it. The list is a local variable, not
+stored on `Transcript`, so it is discarded when parsing finishes.
 
 ### Object shapes
 
 | Class | Attribute | Type | Description |
 | --- | --- | --- | --- |
-| `Node` | `id` | `str` | Participant label, e.g. `"A"` |
-| `Node` | `value` | `str` | Payload slot, unused so far |
-| `Graph` | `nodes` | `Node` | Node created for the participant |
-| `Graph` | `startNode` | `Node` | Entry point into the participant graph |
+| `Node` | `value` | `str \| None` | Payload, e.g. a speaker label |
+| `Node` | `next` | `Node \| None` | Next node in the list |
+| `LinkedList` | `nodes` | `Node` | Sentinel head node |
 | `Transcript` | `contents` | `list[str]` | Cleaned word chunks |
-| `Transcript` | `participants` | `dict[str, Graph]` | Speaker label to graph |
+| `Transcript` | `participants` | `set` | Seen-speaker set, currently unused |
+
+## Known Gaps
+
+- `Transcript.participants` is never populated, so the speaker-seen check in
+  the read loop always passes and `addNode()` is also called with `""` for
+  ordinary characters.
+- `LinkedList.addNode()` does not link past the first node: its `while`
+  condition (`currentNode.next is None`) stops immediately, and the final
+  `currentNode = newNode` rebinds the local name instead of assigning `.next`.
+  It also ignores the `id`/`value` constructor arguments.
+- A word chunk is only flushed on a literal space, so a word ending at a
+  newline merges with the next one (`"A: one\nB: two"` parses as
+  `["A", "oneB"]`, with `two` left unflushed). The sample transcript avoids
+  this because its blank lines contain a space.
+- `isValidChar()` calls `ord()` on every character, so only ASCII letters
+  survive — no digits, accented letters, or punctuation.
 
 ## Prototype Status
 
-The prototype is complete.
+Step 1 of the roadmap is in place: the transcript is located and flattened into
+word chunks. Summarization, productivity and tone analysis, action-item
+extraction, the participant graph, max-heap prioritization, and email delivery
+are not implemented yet.
