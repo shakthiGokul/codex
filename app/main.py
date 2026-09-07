@@ -18,7 +18,7 @@ class LinkedList:
         if currentNode.next is None:
             currentNode.next = newNode
         else:
-            while currentNode and currentNode.next is None:
+            while currentNode and currentNode.next is not None:
                 currentNode = currentNode.next
             currentNode = newNode
         return self        
