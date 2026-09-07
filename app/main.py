@@ -2,32 +2,52 @@ from pathlib import Path
 
 folderPath = Path(__file__).resolve().parent.parent
 
+
 class Node:
-    def __init__(self , value = None , next  = None):
-        self.value = value
-        self.next = next
+    def __init__(self ,id ='' ) -> None:
+        self.id = id
+        self.turns = []
+        self.lines = [] # actual lines in transcript for debugging
 
+    def __repr__(self):
+        return f"Node({self.id!r}, turns={self.turns}, lines={self.lines})"
 
-class LinkedList:
-    def __init__(self ,id = '' , value = ''):
-        self.nodes = Node(None)
+class Graph:
+    def __init__(self):
+        self.nodes = {}
+        self.edges = {}
+        self.prevNode = None
 
-    def addNode(self, node):
-        newNode = Node(node)
-        currentNode = self.nodes
-        if currentNode.next is None:
-            currentNode.next = newNode
+    def addNodeAndEdge(self, adjacentNode , turn , line ):
+        if adjacentNode in self.nodes:
+            self.nodes[adjacentNode].turns.append(turn)
+            self.nodes[adjacentNode].lines.append(line)
+            if adjacentNode in  self.edges[self.prevNode]:
+                self.edges[self.prevNode][adjacentNode] += 1
+            else:
+                self.edges[self.prevNode][adjacentNode] = 1    
+            self.prevNode = adjacentNode    
         else:
-            while currentNode and currentNode.next is not None:
-                currentNode = currentNode.next
-            currentNode = newNode
-        return self        
+            self.prevNode = adjacentNode
+            self.nodes[adjacentNode] = Node(adjacentNode)
+            self.edges[self.prevNode] = {}
+        return self
+
+    def __repr__(self):
+        rows = [f"Graph with {len(self.nodes)} nodes"]
+        for name, node in self.nodes.items():
+            rows.append(f"  {name}: {len(node.turns)} turns at offsets {node.turns}")
+        rows.append("edges:")
+        for src, targets in self.edges.items():
+            for dst, weight in targets.items():
+                rows.append(f"  {src} -> {dst} (x{weight})")
+        return "\n".join(rows)
 
 
 class Transcript:
     def __init__(self):
         self.contents = []
-        self.participants = set()
+        self.graph = Graph()
        
 
     def readAndFormatTheContents(self):
@@ -37,13 +57,13 @@ class Transcript:
                with filePath.open('r' , encoding="utf-8") as file:
                    contents  = file.read()
                    words = []
-                   linkedList = LinkedList()
+                   graph = self.graph
                    for idx, char in enumerate(contents):
                         if self.isValidChar(char):
                             words.append(char)
-                        member = self.getMembers(char , idx , contents)
-                        if member not in self.participants:    
-                            linkedList.addNode(member)
+                        [member , turn , line] = self.getMembers(char , idx , contents)
+                        if member:
+                            graph.addNodeAndEdge(member , turn , line)
                         if char == " ": 
                             if len(words):
                                 charBuffers = self.getCharChunks(words)
@@ -55,16 +75,17 @@ class Transcript:
         return "".join(charStreams)
 
     def getMembers(self, char, idx , contents):
-        member = []
+        members = []
         if char == '\n' or idx == 0:
             start = idx if idx == 0 else idx + 1
             for i in range(start, len(contents)):
                 if contents[i] == ':':
-                    return "".join(member).strip()
+                    member = "".join(members).strip()
+                    return [member , start , i ]
                 if contents[i] == '\n':
                     break
-                member.append(contents[i])
-        return ""
+                members.append(contents[i])
+        return ["" , 0 , 0]
 
 
     
@@ -77,4 +98,9 @@ class Transcript:
 
 transcript = Transcript()
 transcript.readAndFormatTheContents()
+
+print(transcript.graph)
+print()
+print("words:", transcript.contents)
+
 
