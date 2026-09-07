@@ -19,18 +19,18 @@ class Graph:
         self.prevNode = None
 
     def addNodeAndEdge(self, adjacentNode , turn , line ):
-        if adjacentNode in self.nodes:
-            self.nodes[adjacentNode].turns.append(turn)
-            self.nodes[adjacentNode].lines.append(line)
-            if adjacentNode in  self.edges[self.prevNode]:
-                self.edges[self.prevNode][adjacentNode] += 1
-            else:
-                self.edges[self.prevNode][adjacentNode] = 1    
-            self.prevNode = adjacentNode    
-        else:
-            self.prevNode = adjacentNode
+        if adjacentNode not in self.nodes:
             self.nodes[adjacentNode] = Node(adjacentNode)
-            self.edges[self.prevNode] = {}
+            self.edges[adjacentNode] = {}
+
+        self.nodes[adjacentNode].turns.append(turn)
+        self.nodes[adjacentNode].lines.append(line)
+
+        if self.prevNode is not None:
+            outgoing = self.edges[self.prevNode]
+            outgoing[adjacentNode] = outgoing.get(adjacentNode, 0) + 1
+
+        self.prevNode = adjacentNode
         return self
 
     def __repr__(self):
