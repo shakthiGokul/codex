@@ -9,8 +9,8 @@ class Node:
 
 
 class Graph:
-    def __init__(self):
-        self.nodes = []
+    def __init__(self ,id = '' , value = ''):
+        self.nodes = Node(id)
 
 class Transcript:
     def __init__(self):
@@ -30,7 +30,7 @@ class Transcript:
                             words.append(char)
                         member = self.getMembers(char , idx , contents)
                         if member and member not in membersOfMeetings:
-                            self.participants[member] = Node(member)
+                            self.participants[member] = Graph(member)
                             membersOfMeetings.add(member)     
                         if char == " ": 
                             if len(words):
@@ -65,5 +65,4 @@ class Transcript:
 
 transcript = Transcript()
 transcript.readAndFormatTheContents()
-print(transcript.contents)
-print(transcript.participants)
+
